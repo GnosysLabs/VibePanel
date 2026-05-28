@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+vibepanel-config.json
+vibepanel-state.json
+
 
 # vercel
 .vercel
