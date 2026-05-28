@@ -34,6 +34,77 @@ interface Message {
   };
 }
 
+function parseMarkdown(text: string): React.ReactNode {
+  if (!text) return "";
+
+  // Split by code blocks first
+  const parts = text.split(/(```[\s\S]*?```)/g);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("```") && part.endsWith("```")) {
+      // It's a code block
+      const content = part.slice(3, -3).trim();
+      const firstLineBreak = content.indexOf("\n");
+      let lang = "";
+      let code = content;
+      if (firstLineBreak !== -1) {
+        lang = content.substring(0, firstLineBreak).trim();
+        code = content.substring(firstLineBreak + 1);
+      }
+      return (
+        <div key={index} className="my-2 rounded border border-border bg-neutral-950 p-2.5 font-mono text-[10px] text-neutral-200 overflow-x-auto select-text leading-relaxed">
+          {lang && <div className="text-[8px] text-muted-foreground uppercase border-b border-border/40 pb-1 mb-1">{lang}</div>}
+          <pre>{code}</pre>
+        </div>
+      );
+    }
+
+    // Process inline code, bold, lists, and line breaks
+    const subparts = part.split(/(`[^`\n]+`)/g);
+
+    const inlineParsed = subparts.map((subpart, subIdx) => {
+      if (subpart.startsWith("`") && subpart.endsWith("`")) {
+        return (
+          <code key={subIdx} className="bg-neutral-900 border border-border/40 px-1 py-0.5 rounded font-mono text-[10px] text-primary">
+            {subpart.slice(1, -1)}
+          </code>
+        );
+      }
+
+      // Handle bold text **text** and list items
+      const boldParts = subpart.split(/(\*\*[^*\n]+\*\*)/g);
+      return boldParts.map((bPart, bIdx) => {
+        if (bPart.startsWith("**") && bPart.endsWith("**")) {
+          return (
+            <strong key={bIdx} className="font-bold text-foreground">
+              {bPart.slice(2, -2)}
+            </strong>
+          );
+        }
+
+        // Handle simple list items starting with "- " or "* "
+        if (bPart.startsWith("- ") || bPart.startsWith("* ")) {
+          return (
+            <span key={bIdx} className="block pl-3 relative my-1">
+              <span className="absolute left-0 top-1 text-primary">•</span>
+              {bPart.substring(2)}
+            </span>
+          );
+        }
+
+        return bPart;
+      });
+    });
+
+    // Support rendering newlines as paragraphs/breaks
+    return (
+      <span key={index} className="whitespace-pre-line">
+        {inlineParsed}
+      </span>
+    );
+  });
+}
+
 export default function AIAssistantSidebar() {
   const pathname = usePathname();
   const { config, isLoaded } = useAIConfig();
@@ -120,9 +191,10 @@ export default function AIAssistantSidebar() {
                   toast.dismiss(actionToastId);
                   toast.error(errJson.error || `Failed to execute action.`);
                 }
-              } catch (e: any) {
+              } catch (e: unknown) {
                 toast.dismiss(actionToastId);
-                toast.error(`Action failed: ${e.message || e}`);
+                const errMsg = e instanceof Error ? e.message : String(e);
+                toast.error(`Action failed: ${errMsg}`);
               }
             },
           };
@@ -222,8 +294,8 @@ export default function AIAssistantSidebar() {
       </div>
 
       {/* Chat scroll content */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4 pb-6 font-sans text-xs">
+      <ScrollArea className="flex-1 min-h-0 p-4">
+        <div className="space-y-4 pb-6 font-sans text-xs select-text">
           {messages.map((msg) => {
             const isAi = msg.sender === "ai";
             return (
@@ -240,7 +312,7 @@ export default function AIAssistantSidebar() {
                       : "bg-primary border-none text-primary-foreground font-medium shadow-md shadow-primary/5"
                   }`}
                 >
-                  {msg.text}
+                  {parseMarkdown(msg.text)}
 
                   {/* Docker Compose Diff Render */}
                   {isAi && msg.codeDiff && (

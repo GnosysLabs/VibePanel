@@ -1,10 +1,90 @@
 import { NextResponse } from "next/server";
 import { readState, writeState } from "@/lib/state";
+import fs from "fs/promises";
+import path from "path";
+
+async function getNginxConfigPaths(): Promise<string[]> {
+  const commonPaths = [
+    "/etc/nginx/sites-enabled",
+    "/etc/nginx/conf.d",
+    "/opt/homebrew/etc/nginx/servers",
+    "/usr/local/etc/nginx/servers",
+    "/etc/nginx/servers",
+  ];
+  const activePaths: string[] = [];
+  for (const p of commonPaths) {
+    try {
+      const stats = await fs.stat(p);
+      if (stats.isDirectory()) {
+        activePaths.push(p);
+      }
+    } catch {}
+  }
+  return activePaths;
+}
+
+async function parseNginxFile(filePath: string): Promise<any[]> {
+  try {
+    const content = await fs.readFile(filePath, "utf-8");
+    const rules: any[] = [];
+    
+    const serverBlocks = content.split(/server\s*\{/g);
+    for (let i = 1; i < serverBlocks.length; i++) {
+      const block = serverBlocks[i];
+      
+      const serverNameMatch = block.match(/server_name\s+([^;]+);/);
+      const proxyPassMatch = block.match(/proxy_pass\s+([^;]+);/);
+      
+      if (serverNameMatch && proxyPassMatch) {
+        const domains = serverNameMatch[1].trim().split(/\s+/);
+        const target = proxyPassMatch[1].trim();
+        const isSsl = block.includes("listen 443") || block.includes("ssl_certificate");
+        
+        for (const domain of domains) {
+          rules.push({
+            id: `nginx-${path.basename(filePath)}-${domain}`,
+            domain,
+            target,
+            ssl: isSsl,
+            sslExpiry: isSsl ? "System Certificate" : "Disabled",
+            status: "active",
+          });
+        }
+      }
+    }
+    return rules;
+  } catch (err) {
+    console.warn(`Failed to parse Nginx config file at ${filePath}:`, err);
+    return [];
+  }
+}
 
 export async function GET() {
   try {
     const state = await readState();
-    return NextResponse.json({ rules: state.proxyRules });
+    
+    // Parse system Nginx rules dynamically
+    const nginxPaths = await getNginxConfigPaths();
+    const systemRules: any[] = [];
+    for (const dir of nginxPaths) {
+      try {
+        const files = await fs.readdir(dir);
+        for (const file of files) {
+          const rules = await parseNginxFile(path.join(dir, file));
+          systemRules.push(...rules);
+        }
+      } catch {}
+    }
+
+    // Merge system rules with saved rules, avoiding duplicates by domain
+    const mergedRules = [...state.proxyRules];
+    for (const sysRule of systemRules) {
+      if (!mergedRules.some((r) => r.domain.toLowerCase() === sysRule.domain.toLowerCase())) {
+        mergedRules.push(sysRule);
+      }
+    }
+
+    return NextResponse.json({ rules: mergedRules });
   } catch {
     return NextResponse.json({ error: "Failed to load proxy rules" }, { status: 500 });
   }

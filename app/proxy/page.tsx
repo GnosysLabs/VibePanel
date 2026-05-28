@@ -267,15 +267,21 @@ export default function ProxyPage() {
                       )}
                     </TableCell>
                     <TableCell className="p-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleDeleteRule(r.id, r.domain)}
-                        className="h-7 w-7 hover:bg-neutral-950 border border-border text-muted-foreground hover:text-red-400 cursor-pointer transition-colors"
-                        title="Delete routing rule"
-                      >
-                        <Trash2 size={11} />
-                      </Button>
+                      {r.id.startsWith("nginx-") ? (
+                        <span className="text-[10px] text-muted-foreground font-mono italic pr-2">
+                          System Managed
+                        </span>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleDeleteRule(r.id, r.domain)}
+                          className="h-7 w-7 hover:bg-neutral-950 border border-border text-muted-foreground hover:text-red-400 cursor-pointer transition-colors"
+                          title="Delete routing rule"
+                        >
+                          <Trash2 size={11} />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
