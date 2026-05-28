@@ -168,6 +168,13 @@ export default function Dashboard() {
       const res = await fetch("/api/system/update", { method: "POST" });
       clearInterval(timer);
 
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          `Server returned a non-JSON response (status ${res.status}). The server may have restarted, timed out, or encountered a gateway error.`
+        );
+      }
+
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Update failed during step: " + data.step);
