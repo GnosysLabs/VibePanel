@@ -33,7 +33,10 @@ export async function GET() {
     const local = localSha.trim();
     const upstream = upstreamSha.trim();
 
-    if (local !== upstream) {
+    const { stdout: countStr } = await execAsync("git rev-list --count HEAD..@{u}");
+    const count = parseInt(countStr.trim(), 10);
+
+    if (count > 0) {
       // 3. Get pending commits log
       const { stdout: commitsLog } = await execAsync("git log HEAD..@{u} --oneline");
       const commits = commitsLog
