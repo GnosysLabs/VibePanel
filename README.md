@@ -25,17 +25,18 @@ If you are using an autonomous AI coding agent (such as **Claude Code, Cursor, W
 Help me deploy and configure VibePanel (a Next.js server dashboard) on this host. 
 
 Please perform the following operations:
-1. Environment Check: Verify if node (v18+), npm, docker, and pm2 are installed on this server. Report the versions.
-2. Setup Credentials: Create a secure `.env.local` file in the project root. Generate a strong random password and define the credentials:
+1. Clone the Codebase: Clone the VibePanel repository from https://github.com/GnosysLabs/VibePanel.git into a deployment directory.
+2. Environment Check: Verify if node (v18+), npm, docker, and pm2 are installed on this server. Report the versions.
+3. Setup Credentials: In the cloned root directory, create a secure `.env.local` file. Generate a strong random password and define the credentials:
    ADMIN_USER=admin
    ADMIN_PASSWORD=<generate_strong_random_password>
    Keep a record of the generated password for my reference.
-3. Install & Build: Run `npm install` followed by `npm run build` to compile the optimized production bundle.
-4. Persistent Registration: Set up PM2 to manage VibePanel persistently in the background. Start it using:
+4. Install & Build: Run `npm install` followed by `npm run build` to compile the optimized production bundle.
+5. Persistent Registration: Set up PM2 to manage VibePanel persistently in the background. Start it using:
    `pm2 start npm --name "vibepanel" -- run start -- -p 3000`
    Ensure the PM2 configuration is saved so it survives system reboots:
    `pm2 save`
-5. Reverse Proxy Suggestion: Tell me what ports are open and provide a recommended Nginx server configuration or Caddy block to reverse-proxy port 3000 to a public domain with SSL.
+6. Reverse Proxy Suggestion: Tell me what ports are open and provide a recommended Nginx server configuration or Caddy block to reverse-proxy port 3000 to a public domain with SSL.
 ```
 
 ---
