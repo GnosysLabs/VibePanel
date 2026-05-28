@@ -78,7 +78,7 @@ export async function POST() {
 
     // 2. Install dependencies
     try {
-      await execAsync("npm install");
+      await execAsync("npm install --production=false");
     } catch (err: any) {
       return NextResponse.json({ error: "Dependency installation failed: " + err.message, step: "install" }, { status: 500 });
     }
