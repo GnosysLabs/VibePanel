@@ -5,6 +5,7 @@ import { AIConfigProvider } from "@/context/AIConfigContext";
 import Sidebar from "@/components/Sidebar";
 import AIAssistantSidebar from "@/components/AIAssistantSidebar";
 import CommandPalette from "@/components/CommandPalette";
+import AppShell from "@/components/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -37,14 +38,7 @@ export default function RootLayout({
       <body className="min-h-full bg-background text-foreground flex flex-col font-sans overflow-hidden">
         <AIConfigProvider>
           <TooltipProvider delay={150}>
-            <div className="flex h-screen w-screen overflow-hidden bg-background">
-              <Sidebar />
-              <main className="flex-1 overflow-y-auto bg-background p-6 md:p-8 relative">
-                {children}
-              </main>
-              <AIAssistantSidebar />
-              <CommandPalette />
-            </div>
+            <AppShell>{children}</AppShell>
             <Toaster theme="dark" closeButton richColors />
           </TooltipProvider>
         </AIConfigProvider>
